@@ -28,6 +28,6 @@ response = client.conversations_history(
     oldest=oldest,
     latest=latest,
     inclusive=True
-    )
+)
 messages = response["messages"]
 pprint(messages)

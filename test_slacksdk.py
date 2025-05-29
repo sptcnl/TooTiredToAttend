@@ -1,4 +1,5 @@
-import os, dotenv, time, datetime, json, re
+import os, dotenv, time, json, re
+from datetime import datetime, timedelta
 from slack_sdk import WebClient
 from collections import defaultdict
 
@@ -10,8 +11,8 @@ client = WebClient(token=os.getenv("SLACK_BOT_TOKEN"))
 
 # 날짜 설정
 date_str = "2025-04-22"
-start_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-end_dt = start_dt + datetime.timedelta(days=40)
+start_dt = datetime.strptime(date_str, "%Y-%m-%d")
+end_dt = start_dt + timedelta(days=40)
 
 oldest = time.mktime(start_dt.timetuple())
 latest = time.mktime(end_dt.timetuple())
@@ -105,8 +106,50 @@ json_data = json.dumps(result, ensure_ascii=False, indent=2)
 with open("all_attend.json", "w", encoding="utf-8") as f:
     f.write(json_data)
 
+def seconds_to_hm(seconds):
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    return f"{hours}시간 {minutes}분"
 
-# 결과 누적 리스트
+# 일별 누적
+def calculate_daily_time(messages):
+    pending = defaultdict(list)  # {user_id: [login_times]}
+    daily = defaultdict(lambda: defaultdict(timedelta))  # {user_id: {date: duration}}
+
+    for msg in messages:
+        user_id = msg["user_id"]
+        user_name = msg["name"]
+        ts = datetime.fromtimestamp(float(msg["ts"]))
+
+        if msg["is_connect"]:  # 접속
+            if len(pending[user_id]) >= 1:  # 이미 접속 중인 경우
+                cur_date_key = (ts).date()
+                print(f"[에러] {cur_date_key} {user_id}의 중복 접속 시도 무시")
+            
+            pending[user_id] = [ts]
+        else:  # 접속종료
+            if pending[user_id]:
+                login_ts = pending[user_id].pop(0)
+                duration = ts - login_ts
+
+                date_key = (login_ts).date()
+                daily[user_id][date_key] += duration
+
+    # 날짜 키를 문자열로 변환
+    result = {}
+    for user_id, dates in daily.items():
+        result[user_id] = {
+            date.strftime("%Y-%m-%d"): seconds_to_hm(duration.total_seconds())
+            for date, duration in dates.items()
+        }
+    return result
+
+json_data = json.dumps(calculate_daily_time(result), ensure_ascii=False, indent=2)
+with open("daily_attend.json", "w", encoding="utf-8") as f:
+    f.write(json_data)
+
+
+# 전체 결과 누적 리스트
 user_times = defaultdict(lambda: {"name": None, "user_id": None, "duration_seconds": 0.0})
 
 # 연결 상태 추적용 딕셔너리 (key: user_id, value: connect_ts)
@@ -132,11 +175,6 @@ for item in result:
 
 # 결과 리스트로 변환
 accumulated = list(user_times.values())
-
-def seconds_to_hm(seconds):
-    hours = int(seconds // 3600)
-    minutes = int((seconds % 3600) // 60)
-    return f"{hours}시간 {minutes}분"
 
 for entry in accumulated:
     entry["duration_hm"] = seconds_to_hm(entry["duration_seconds"])

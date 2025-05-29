@@ -52,6 +52,7 @@ json_data = json.dumps(all_messages, ensure_ascii=False, indent=4)
 with open("all_messages.json", "w", encoding="utf-8") as f:
     f.write(json_data)
 
+
 REQUIRED_VALUES  = {
     "username": "ZEP Notification",
     "bot_id": "B08NN84BQAK",
@@ -98,7 +99,10 @@ for item in all_messages:
 
     result.append(filtered)
 
-# print(json.dumps(result, ensure_ascii=False, indent=2))
+json_data = json.dumps(result, ensure_ascii=False, indent=2)
+with open("all_attend.json", "w", encoding="utf-8") as f:
+    f.write(json_data)
+
 
 # 결과 누적 리스트
 user_times = defaultdict(lambda: {"name": None, "user_id": None, "duration_seconds": 0.0})

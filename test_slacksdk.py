@@ -60,7 +60,7 @@ REQUIRED_VALUES  = {
     "type": "message"
 }
 
-fields = ['text', 'ts', 'username', 'bot_id', 'subtype', 'type']
+fields = ['text', 'ts', 'username']
 result = []
 
 # 한글/영어 정규표현식 패턴
@@ -83,6 +83,8 @@ for item in all_messages:
     # text에서 이름, 접속여부, userid 분리 후 따로 저장
     match_kr = re.match(pattern_kr, text)
     match_en = re.match(pattern_en, text)
+    if not (match_kr or match_en):
+        continue  # 패턴 불일치시 건너뜀
 
     if match_kr:
         name = match_kr.group(1)
@@ -111,7 +113,7 @@ user_times = defaultdict(lambda: {"name": None, "user_id": None, "duration_secon
 active_connections = {}
 
 for item in result:
-    user_id = item.get("user_id")
+    user_id = item["user_id"]
     if not user_id:
         continue
 

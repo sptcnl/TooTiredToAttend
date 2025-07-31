@@ -12,7 +12,7 @@ client = WebClient(token=os.getenv("SLACK_BOT_TOKEN"))
 # 날짜 설정
 date_str = "2025-04-22"
 start_dt = datetime.strptime(date_str, "%Y-%m-%d")
-end_dt = start_dt + timedelta(days=40)
+end_dt = start_dt + timedelta(days=101)
 
 oldest = time.mktime(start_dt.timetuple())
 latest = time.mktime(end_dt.timetuple())
